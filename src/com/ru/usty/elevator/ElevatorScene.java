@@ -55,7 +55,7 @@ public class ElevatorScene {
 	public static Semaphore semaphore1;
 
 	public static Semaphore personCountMutex;
-	public static Semaphore elevatorElevatorWaitMutex;
+	public static Semaphore elevatorWaitMutex;
 
 	private Thread elevatorThread = null;
 	public static ElevatorScene scene;
@@ -91,6 +91,7 @@ public class ElevatorScene {
 		scene = this;
 		semaphore1 = new Semaphore(0);
 		personCountMutex = new Semaphore(1);
+		elevatorWaitMutex = new Semaphore(1);
 
 		elevatorThread = new Thread(new Elevator(numberOfFloors));
 		elevatorThread.start();

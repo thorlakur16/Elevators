@@ -24,9 +24,9 @@ public class Person implements Runnable {
     public void run() {
         try {
 
-            ElevatorScene.elevatorElevatorWaitMutex.acquire();
+            ElevatorScene.elevatorWaitMutex.acquire();
                 ElevatorScene.semaphore1.acquire(); //wait
-            ElevatorScene.elevatorElevatorWaitMutex.release();
+            ElevatorScene.elevatorWaitMutex.release();
 
         } catch (InterruptedException e) {
             e.printStackTrace();

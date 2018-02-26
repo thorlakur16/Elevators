@@ -36,21 +36,20 @@ public class Elevator implements Runnable {
 
     @Override
     public void run() {
-        if(ElevatorScene.elevatorsMayDie == true){
-            return;
-        }
-        for(int i = 0; i < 16; i++){
+
+        for(int i = 0; i < 8; i++){
 
             ElevatorScene.semaphore1.release(); //signal
 
         }
 
         while(true){
+            if(ElevatorScene.elevatorsMayDie == true){
+                return;
+            }
             if(numberOfFloors == currentFloor){
                 isGoingUp = false;
             }
-
-
         }
     }
 }
