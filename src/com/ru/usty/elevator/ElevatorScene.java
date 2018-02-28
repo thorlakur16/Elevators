@@ -11,129 +11,161 @@ import java.util.concurrent.Semaphore;
  *
  */
 
+
 public class ElevatorScene {
-
-	/*
-	Arraylista af semafórum sem tákna persónur að bíða eftir lyftu
-	Arraylista af semafórum sem tákna persónur að bíða eftir að komast út úr lyftu
-
-	Kannski er þetta bara orðalag og þið eruð að hugsa þetta rétt, en endilega reynið
-	að aftengja þessa hugsum að semafóran tengist á einhvern hátt persónum.  hugsið frekar
-	semafórurnar sem hlið sem persónan bíður á og lyftan síðan opnar og lokar.
-
-	Mér sýnist samt á öllu að þið séuð að hugsa þetta nokkurn vegin rétt.
-	Ég myndi samt hugsa þetta meira aðskilið fyrir persónu og lyftu (sjá hér neðar),
-	þ.e. annars vegar aðgerðaröð fyrir persónu og hins vegar aðgerðaröð fyrir lyftu.
-	Þetta tvennt á ekkert að tala saman eða vita hvort af öðru, heldur bara kalla á
-	semafórurnar og stýra þannig flæðinu í sameiningu, án þess nokkurn tíman að tala
-	beint saman.
-
-	Þið þurfið líka að hugsa um hversu oft (eða fyrir hve mörg pláss) lyftan opna og
-	lokar.
-
-	Hugsið þessa mutexa líka alveg up á nýtt.  T.d. personWaitingMutex hefur engan tilgang.
-	Það þarf ekki að passa upp á thread safety á semafórunum.  Ef þið viljið nota mutexa þá
-	ættu þeir bara að vera til að passa upp á critical section, t.d. þar sem verið er að
-	breyta gildina á einhverjum counter, sem aðrir þræðir gætu reynt að breyta á sama tíma.
-	Lyftukerfið sjálft er bara keyrt á þessum inn og út semafórum.
-
-	Það má hugsa það þannig á hverjum stað sem þarf að bíða á sé semafóra.  þannig sé semafóra
-	inn á neðri hæðinni og önnur semfóra út á efri hæðinni.  persóna bíður fyrst á inn-semafórunni
-	og er í raun föst þar þangað til lyfta opnar (SIGNAL, release()).  Um leið og persónan losnar
-	lækkar hún counter á hæðinni og hækkar í lyftunni til að herma það að hún hafi stigið inn í
-	lyftuna.  Svo bíður hún á út-semafórunni.  Þegar lyftan kemur upp á efri hæðina opnar hún
-	út-semafóruna og persónan losnar.  Persónan lækkar þá counter í lyftunni og hækkar á út hlið
-	hæðarinnar til að herma það að hafa stigið út.
-	 */
 
 	//TO SPEED THINGS UP WHEN TESTING,
 	//feel free to change this.  It will be changed during grading
-	public static final int VISUALIZATION_WAIT_TIME = 500;  //milliseconds
+	public static final int VISUALIZATION_WAIT_TIME = 50;  //milliseconds
 
-	public static boolean elevatorsMayDie;
+	// to bind (this) to a varible we creata a instance of Elevator scene
+	public static ElevatorScene that;
+	public ArrayList <Thread> Elevators;
 
-	public static Semaphore semaphore1;
+	public static ArrayList<Semaphore> WaitingForElevator;
 
-	public static Semaphore personCountMutex;
-	public static Semaphore elevatorWaitMutex;
 
-	private Thread elevatorThread = null;
-	public static ElevatorScene scene;
+	public ArrayList<Semaphore[]> WaitingToExitElevator;
+
+	public static Semaphore currentFloorMutex;
+	public static Semaphore exitedCountMutex;
+	public static Semaphore whichElevatorMutex;
+	public static Semaphore personsInElevatorMutex;
+	public static Semaphore personsWaitingMutex;
+
+	public ArrayList<Integer> personsInElevator;
+	public ArrayList<Integer> personsWaitingOnFloor;
+	public ArrayList<Integer> exitedCount;
+	public ArrayList<Integer> currentFloor;
+	public ArrayList<Integer> whichElevatorOnFloor;
+
 
 	private int numberOfFloors;
 	private int numberOfElevators;
 
-	ArrayList<Integer> personCount; //use if you want but
-									//throw away and
-									//implement differently
-									//if it suits you
-	ArrayList<Integer> exitedCount = null;
-	public static Semaphore exitedCountMutex;
 
+    // constructor that initilizes all our values for the ElevatorScene class and lets us acess this from that instnace through the (that) variable
+	public ElevatorScene() {
+		ElevatorScene.that = this; // bind this
+		that.Elevators = new ArrayList<>(); // init Elevators
+		that.WaitingForElevator = new ArrayList<>();
+		that.WaitingToExitElevator = new ArrayList<>();
+		that.personsInElevator = new ArrayList<>();
+		that.personsWaitingOnFloor = new ArrayList<>();
+		that.exitedCount = new ArrayList<>();
+		that.currentFloor = new ArrayList<>();
+		that.whichElevatorOnFloor = new ArrayList<>();
+
+	}
 	//Base function: definition must not change
 	//Necessary to add your code in this one
 	public void restartScene(int numberOfFloors, int numberOfElevators) {
 
-		elevatorsMayDie = true;
+        /**
+         * Important to add code here to make new
+         * threads that run your elevator-runnables
+         *
+         * Also add any other code that initializes
+         * your system for a new run
+         *
+         * If you can, tell any currently running
+         * elevator threads to stop
+         */
 
-		if(elevatorThread != null){
-			if(elevatorThread.isAlive()){
-				try {
-					elevatorThread.join();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		// start by joning all threads active in Elevator thread array list
+		// run through all elevator threads and join them
+		for (Thread elevatorThread:Elevators) {
+			// if thread is not initilized or doing anything skipp it
+			if(elevatorThread != null) {
+				// if thread is alive join it
+				if(elevatorThread.isAlive()){
+					try{
+						elevatorThread.join();
+
+					} catch (InterruptedException e){
+						e.printStackTrace();
+					}
 				}
 			}
 		}
 
-		elevatorsMayDie = false;
+		// initilize number of floors and elevators
 
-		scene = this;
-		semaphore1 = new Semaphore(0);
-		personCountMutex = new Semaphore(1);
-		elevatorWaitMutex = new Semaphore(1);
+		that.numberOfFloors = numberOfFloors;
+		that.numberOfElevators = numberOfElevators;
+/*-------------------------------------- next we create the elevator threads -------------------------------------------*/
 
-		elevatorThread = new Thread(new Elevator(numberOfFloors));
-		elevatorThread.start();
+        // start by clearing old elevators,current floors and people in elevator when restarting the scene and then repopulate them
 
-		/**
-		 * Important to add code here to make new
-		 * threads that run your elevator-runnables
-		 * 
-		 * Also add any other code that initializes
-		 * your system for a new run
-		 * 
-		 * If you can, tell any currently running
-		 * elevator threads to stop
-		 */
+        that.Elevators.clear(); // clear Elevator arraylist before resting them
+        that.personsInElevator.clear(); // clear personsInElevator arraylist  before resting them
+        that.currentFloor.clear(); // clear currentFloor arraylist before reseting them
+
+        // create the elevator threads again after clearing them
+        for(int i = 0; i < numberOfElevators;i++){
+
+            // create all the elevator threads
+            that.Elevators.add(new Thread(new Elevator(i)));
+            that.Elevators.get(i).start();
+
+            // initilize all elevator threads to be empty and set the current floor for them to be ground floor
+
+            that.currentFloor.add(0);
+            that.personsInElevator.add(0);
+
+        }
+
+		/*----------------------- next we init all Mutex semaphores  --------------------------------*/
 
 
-		this.numberOfFloors = numberOfFloors;
-		this.numberOfElevators = numberOfElevators;
-
-		personCount = new ArrayList<Integer>();
-		for(int i = 0; i < numberOfFloors; i++) {
-			this.personCount.add(0);
-		}
-
-		if(exitedCount == null) {
-			exitedCount = new ArrayList<Integer>();
-		}
-		else {
-			exitedCount.clear();
-		}
-		for(int i = 0; i < getNumberOfFloors(); i++) {
-			this.exitedCount.add(0);
-		}
+		currentFloorMutex = new Semaphore(1);
+		whichElevatorMutex = new Semaphore(1);
 		exitedCountMutex = new Semaphore(1);
+		personsWaitingMutex = new Semaphore(1);
+		personsInElevatorMutex = new Semaphore(1);
+
+
+
+        /*------------------------------Next we reinitilize and populate the following Arraylists ,personsWaitingOnFloor,exitedCount,whatElevator ---------------------------------------------------------*/
+
+
+       // clear and reinitilize semephores for people waiting for elevator
+        WaitingForElevator.clear();
+        that.whichElevatorOnFloor.clear();
+
+        for(int i = 0; i< numberOfFloors;i++){
+            WaitingForElevator.add(new Semaphore(0));
+            that.whichElevatorOnFloor.add(0);
+        }
+
+        // clear and reinitilize semephores for people leaving elevator
+
+        that.WaitingToExitElevator.clear();
+
+        for(int i = 0; i < numberOfElevators;i++) {
+
+           Semaphore [] index = new Semaphore[numberOfFloors];
+
+           for(int j = 0; j < numberOfFloors; j++) {
+               index[j] = new Semaphore(0);
+           }
+           that.WaitingToExitElevator.add(index);
+        }
+
+
+       //first we clear the tha arraylist then we reinitalize the number of persons leaving the elevators and waiting for a elevator
+       that.personsWaitingOnFloor.clear();
+       that.exitedCount.clear();
+       for(int i = 0; i< numberOfFloors;i++) {
+           that.personsWaitingOnFloor.add(0);
+           that.exitedCount.add(0);
+       }
+
 	}
 
 	//Base function: definition must not change
 	//Necessary to add your code in this one
 	public Thread addPerson(int sourceFloor, int destinationFloor) {
-
-		Thread thread = new Thread(new Person( sourceFloor, destinationFloor));
-		thread.start();
 
 		/**
 		 * Important to add code here to make a
@@ -143,61 +175,115 @@ public class ElevatorScene {
 		 * so that it can be reaped in the testSuite
 		 * (you don't have to join() yourself)
 		 */
-
-		//dumb code, replace it!
-		try {
-
-			personCountMutex.acquire();
-				personCount.set(sourceFloor, personCount.get(sourceFloor) + 1);
-			personCountMutex.release();
-
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		return thread;  //this means that the testSuite will not wait for the threads to finish
+		// Creata a new instance of the thread Persons class
+        Thread new_Person = new Thread(new Persons(sourceFloor,destinationFloor));
+        new_Person.start();
+        return new_Person;
 	}
 
 	//Base function: definition must not change, but add your code
 	public int getCurrentFloorForElevator(int elevator) {
 
-		//dumb code, replace it!
-		return 1;
+
+        return currentFloor.get(elevator);
 	}
+
+	// sets the current floor for elevator
+	public void setCurrentFloorForElevator(int elevator, int floor) {
+	    try{
+	        currentFloorMutex.acquire();
+	            currentFloor.set(elevator,floor);
+	        currentFloorMutex.release();
+
+        }catch (InterruptedException e) {
+	        e.printStackTrace();
+        }
+    }
+
 
 	//Base function: definition must not change, but add your code
 	public int getNumberOfPeopleInElevator(int elevator) {
-		
-		//dumb code, replace it!
-		switch(elevator) {
-		case 1: return 1;
-		case 2: return 4;
-		default: return 3;
-		}
+
+	    int persons_in = 0;
+
+	    try{
+	        // this is for thread safety so that only one Elevator thread can access personInElevator each time
+	        personsInElevatorMutex.acquire();
+                persons_in = personsInElevator.get(elevator);
+	        personsInElevatorMutex.release();
+
+        } catch (InterruptedException e) {
+	        e.printStackTrace();
+        }
+
+        return persons_in;
+
 	}
 
-	//Láki
-	public void incrementNumberOfPeopleInElevator() {
+	// sets the number of people in the elevator
+	public void setNumberOfPeopleInElevator(int elevator, int numberOfPeople) {
 
-	}
+	    try{
+	        personsInElevatorMutex.acquire();
+	            personsInElevator.set(elevator,numberOfPeople);
+	        personsInElevatorMutex.release();
+            System.out.println("People in elevator " + elevator + " : " + numberOfPeople);
+
+        }catch(InterruptedException e) {
+	        e.printStackTrace();
+        }
+    }
 
 	//Base function: definition must not change, but add your code
 	public int getNumberOfPeopleWaitingAtFloor(int floor) {
 
-		return personCount.get(floor);
+	    int persons_waiting = 0;
+	    //System.out.println(persons_waiting);
+
+	    try {
+	        personsWaitingMutex.acquire();
+	            persons_waiting = personsWaitingOnFloor.get(floor);
+	        personsWaitingMutex.release();
+            //System.out.println(persons_waiting);
+
+        } catch (InterruptedException e) {
+	        e.printStackTrace();
+        }
+
+		return persons_waiting;
 	}
+	// set the number of people waiting at floor
+	public void setNumberOfPeopleWaitingAtFloor(int floor, int numberOfPeople) {
 
-	public void decrementNumberOfPeopleWaitingAtFloor(int floor){
-		try {
+	    try {
+	        personsWaitingMutex.acquire();
+	            personsWaitingOnFloor.set(floor,numberOfPeople);
+	        personsWaitingMutex.release();
+        } catch (InterruptedException e) {
+	        e.printStackTrace();
+        }
 
-			personCountMutex.acquire();
-				personCount.set(floor, (personCount.get(floor) -1));
-			personCountMutex.release();
+    }
 
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
+    // gets the elveator that is open and letting persons in
+    public int getActiveElevator(int floor) {
+
+	    int active_elevator;
+
+        active_elevator = whichElevatorOnFloor.get(floor);
+
+        return active_elevator;
+    }
+
+    // sets the elevator that is open and letting persons in
+    public void setActiveElevator(int floor,int elevator) throws InterruptedException{
+
+
+        whichElevatorOnFloor.set(floor,elevator);
+
+    }
+
+
 
 	//Base function: definition must not change, but add your code if needed
 	public int getNumberOfFloors() {
@@ -241,7 +327,7 @@ public class ElevatorScene {
 		try {
 			
 			exitedCountMutex.acquire();
-			exitedCount.set(floor, (exitedCount.get(floor) + 1));
+			    exitedCount.set(floor, (exitedCount.get(floor) + 1));
 			exitedCountMutex.release();
 
 		} catch (InterruptedException e) {
@@ -260,6 +346,5 @@ public class ElevatorScene {
 			return 0;
 		}
 	}
-
 
 }
