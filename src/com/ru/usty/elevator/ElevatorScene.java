@@ -16,7 +16,7 @@ public class ElevatorScene {
 
 	//TO SPEED THINGS UP WHEN TESTING,
 	//feel free to change this.  It will be changed during grading
-	public static final int VISUALIZATION_WAIT_TIME = 50;  //milliseconds
+	public static final int VISUALIZATION_WAIT_TIME = 10;  //milliseconds
 
 	// to bind (this) to a varible we creata a instance of Elevator scene
 	public static ElevatorScene that;
@@ -153,7 +153,7 @@ public class ElevatorScene {
         }
 
 
-       //first we clear the tha arraylist then we reinitalize the number of persons leaving the elevators and waiting for a elevator
+       //first we clear the arraylist then we reinitalize the number of persons leaving the elevators and waiting for a elevator
        that.personsWaitingOnFloor.clear();
        that.exitedCount.clear();
        for(int i = 0; i< numberOfFloors;i++) {
