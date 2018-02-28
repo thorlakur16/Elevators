@@ -8,6 +8,8 @@ public class Elevator implements Runnable {
     private int MAX_IN_ELEVATOR = 6;
     private boolean isRunning = true;
     private boolean goingUp = true;
+    private boolean direction;
+    private boolean goingDown = false;
     private boolean isWaitingAtFloor = true;
     private int topFloor = ElevatorScene.that.getNumberOfFloors() - 1; // -1 because floors are from 0 to topfloor
     private int bottomFloor = 0;
@@ -21,22 +23,23 @@ public class Elevator implements Runnable {
     // function that moves the elevator between floors
     private void moveToNextFloor() throws InterruptedException{
 
-        if(goingUp ) {
+        if(this.currentFloor == topFloor){
+            direction = goingDown;
+        }
+        if(this.currentFloor == bottomFloor){
+            direction = goingUp;
+        }
+        if(direction == goingUp ) {
             ElevatorScene.that.setCurrentFloorForElevator(this.currentElveator,(this.currentFloor) +1);
             this.currentFloor++;
             System.out.println("current Floor " + this.currentFloor);
         }
-        else if(!goingUp) {
+        else if(direction == goingDown) {
             ElevatorScene.that.setCurrentFloorForElevator(this.currentElveator,(this.currentFloor) -1);
             this.currentFloor--;
             System.out.println("current Floor " + this.currentFloor);
         }
-        if(this.currentFloor == topFloor){
-            goingUp = false;
-        }
-        if(this.currentFloor == bottomFloor){
-            goingUp = true;
-        }
+
     }
 
     @Override
