@@ -1,5 +1,5 @@
 package com.ru.usty.elevator;
-// person class is responsible for populating the system with persons threads by calling functions from ElevatorScene and to do its functions it had to call a Mutex.
+// person class is responsible for populating the system with persons threads by calling functions from ElevatorScene and to do its functions it had to call a Mutex to ensure thread safety.
 public class Persons implements Runnable {
 
     int srcFloor, dstFloor, elevator;
@@ -11,7 +11,6 @@ public class Persons implements Runnable {
     }
     @Override
     public void run() {
-
         try {
 
 
@@ -35,7 +34,7 @@ public class Persons implements Runnable {
 
             ElevatorScene.that.setNumberOfPeopleWaitingAtFloor(this.srcFloor,(ElevatorScene.that.getNumberOfPeopleWaitingAtFloor(this.srcFloor)) - 1);
 
-            // Persons thread lets elevator know what floor it wants to leave the elevator on.
+            // Persons thread lets elevator know what floor it wants to leave said elevator on.
 
             ElevatorScene.that.WaitingToExitElevator.get(this.elevator)[this.dstFloor].acquire();
 

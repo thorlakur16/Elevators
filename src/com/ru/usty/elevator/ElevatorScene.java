@@ -18,7 +18,7 @@ public class ElevatorScene {
 	//feel free to change this.  It will be changed during grading
 	public static final int VISUALIZATION_WAIT_TIME = 50;  //milliseconds
 
-	// to bind this to a varible we creata a instance of Elevator scene
+	// to bind (this) to a varible we creata a instance of Elevator scene
 	public static ElevatorScene that;
 	public ArrayList <Thread> Elevators;
 
@@ -44,7 +44,7 @@ public class ElevatorScene {
 	private int numberOfElevators;
 
 
-    // constructor that initilizes all our values for the ElevatorScene class and lets us acess this from that instnace through that variable
+    // constructor that initilizes all our values for the ElevatorScene class and lets us acess this from that instnace through the (that) variable
 	public ElevatorScene() {
 		ElevatorScene.that = this; // bind this
 		that.Elevators = new ArrayList<>(); // init Elevators

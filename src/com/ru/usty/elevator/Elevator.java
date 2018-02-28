@@ -43,13 +43,14 @@ public class Elevator implements Runnable {
     public void run() {
 
 
-        // here we let the elevator thread sleep to allow persons threads to que up on each floor
+        // here we let the elevator thread sleep to allow persons threads to line up on each floor and enter the elevator
         try{
             Thread.sleep(ElevatorScene.VISUALIZATION_WAIT_TIME);
         } catch(InterruptedException e) {
             e.printStackTrace();
         }
-        // all process running while there are Person threads waiting on floors or in a elevator
+
+        // all process running while there are Person threads waiting on floors or in a elevators
 
         while (isRunning){
 
@@ -58,7 +59,7 @@ public class Elevator implements Runnable {
                 if(ElevatorScene.that.getNumberOfPeopleInElevator(this.currentElveator) > 0) {
 
 
-                    // if the current elevator holds some persons threads we start by releasing as many semaphores as there are persons threads in the elevator for current floor
+                    // if the current elevator holds some persons threads we start by releasing as many semaphores as the max_number of threads that can be in a elevator (6)
 
                     for(int i = 0; i < this.MAX_IN_ELEVATOR;i++) {
 
@@ -66,7 +67,7 @@ public class Elevator implements Runnable {
                         ElevatorScene.that.WaitingToExitElevator.get(this.currentElveator)[this.currentFloor].release();
 
                         // here we let the elevator thread sleep so person threads can enter until elevator is full if there are threads waiting on that floor
-                        Thread.sleep(ElevatorScene.VISUALIZATION_WAIT_TIME);
+                        Thread.sleep((ElevatorScene.VISUALIZATION_WAIT_TIME)/2);
                     }
 
                     // after releasing from the semaphore for current elevator on current floor check if there are unclaimed semaphore realeses and if so reacquire them
@@ -83,13 +84,13 @@ public class Elevator implements Runnable {
 
                 }
 
-                // if the elevator isint full get the space available and realease semephores to let person thread in to fill the elevator
+                // if the elevator is´nt full get the space available on elevator and realease semephores to let person thread in to fill the elevator
                 if(ElevatorScene.that.getNumberOfPeopleInElevator(this.currentElveator) >= 0 && ElevatorScene.that.getNumberOfPeopleInElevator(this.currentElveator) < this.MAX_IN_ELEVATOR) {
 
                     // if there are persons threads waiting on current floor
                     if(ElevatorScene.that.personsWaitingOnFloor.get(this.currentFloor) > 0){
 
-                        //set the active elevator to the elevator with availble space and telling the persons thread that the elevator is open by releasing the mutex accuired by the persons thread
+                        //set the active elevator to the elevator with availble space and tell the persons thread that the elevator is open by and ensure thread saftey by calling the wichElevatorMutex
                         ElevatorScene.whichElevatorMutex.acquire();
 
                         ElevatorScene.that.setActiveElevator(this.currentFloor,this.currentElveator);
@@ -97,15 +98,15 @@ public class Elevator implements Runnable {
                         int available_space = this.MAX_IN_ELEVATOR - ElevatorScene.that.personsInElevator.get(this.currentElveator);
                         System.out.println(available_space);
 
-                        // for every space avilable on the elevator realeas a semaphore that allows a persons thread to eneter the elevator
+                        // for every space avilable on the elevator realeas a semaphore that allows a persons thread to enter the elevator
                         for(int i = 0; i < available_space;i++) {
                             //System.out.println(available_space);
                             ElevatorScene.WaitingForElevator.get(this.currentFloor).release();
-                            // we let the elevator thread sleep so the persons thread can leave the elevator one at a time
-                            Thread.sleep(ElevatorScene.VISUALIZATION_WAIT_TIME);
+                            // we let the elevator thread sleep so the persons thread can leave the elevator one at a time and not to crash the system
+                            Thread.sleep((ElevatorScene.VISUALIZATION_WAIT_TIME)/2);
                         }
 
-                        // check if anay of the semaphores released went unclaimed if so reacquire them
+                        // check if any of the semaphores released went unclaimed if so reacquire them
 
                         int unclaimed_semaphores = ElevatorScene.WaitingForElevator.get(this.currentFloor).availablePermits();
 
@@ -120,10 +121,10 @@ public class Elevator implements Runnable {
                 }
 
                 // check if there are any Persons threads waiting on any floor.
-                for(int i = 0; i<= topFloor;i++) {
+                for(int floor = 0; floor<= topFloor;floor++) {
                    // System.out.println(ElevatorScene.that.getNumberOfPeopleWaitingAtFloor(i));
 
-                    if(ElevatorScene.that.personsWaitingOnFloor.get(i) > 0) {
+                    if(ElevatorScene.that.personsWaitingOnFloor.get(floor) > 0) {
                         System.out.println("enters isWiating = true ");
                         isWaitingAtFloor = true;
                         break;
